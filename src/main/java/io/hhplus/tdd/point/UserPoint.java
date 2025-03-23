@@ -1,5 +1,7 @@
 package io.hhplus.tdd.point;
 
+import org.apache.catalina.User;
+
 public record UserPoint(
         long id,
         long point,
@@ -21,4 +23,9 @@ public record UserPoint(
     public Long getPoint() {
         return point;
     }
+
+    public UserPoint chargePoint(long id, long amount) {
+        return new UserPoint(this.id, this.point + amount, System.currentTimeMillis());
+    }
+
 }

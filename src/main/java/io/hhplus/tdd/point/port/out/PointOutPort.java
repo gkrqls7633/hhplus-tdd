@@ -5,4 +5,6 @@ import io.hhplus.tdd.point.UserPoint;
 public interface PointOutPort {
 
     UserPoint getPoint(long id);
+
+    void charge(UserPoint userPoint, long amount);
 }
