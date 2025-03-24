@@ -36,4 +36,13 @@ public class PointTempInmemory implements PointOutPort {
 
         log.info("Updated dbMap: {}", dbMap);
     }
+
+    @Override
+    public void use(UserPoint userPoint, long amount) {
+        UserPoint newUserPoint = userPoint.usePoint(userPoint.id(), amount);
+        dbMap.put(userPoint.id(), newUserPoint);
+
+        log.info("Updated dbMap: {}", dbMap);
+
+    }
 }

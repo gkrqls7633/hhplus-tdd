@@ -27,6 +27,7 @@ class PointServiceTest {
     @Mock
     private PointOutPort pointOutPort;  // PointOutPort를 Mock 객체로 생성
 
+
     @Test
     @DisplayName("특정 유저의 포인트는 0보다 크거나 같아야 한다.")
     void getNonNegativePoint() {
@@ -37,7 +38,7 @@ class PointServiceTest {
         when(pointOutPort.getPoint(userId)).thenReturn(new UserPoint(userId, 1000, System.currentTimeMillis()));
 
         // when
-        long point = pointService.getPoint(1L);
+        long point = pointService.getPoint(userId);
 
         //then
         assertTrue(point >= 0);
@@ -163,5 +164,72 @@ class PointServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("충전할 포인트는 0보다 커야합니다.");
 
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 유저Id는 포인트를 사용할 수 없다.")
+    void notUsePointWithNoExistsUser() {
+        //given
+        long userId = 4L;
+        long amount = 1000L;
+
+        //기존 유저 존재하지 않도록 null 반환하도록 mock 처리
+        when(pointOutPort.getPoint(userId)).thenReturn(null);
+
+        //when & then
+        assertThatThrownBy(() -> pointService.use(userId, amount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("유효하지 않은 유저 ID입니다.");
+    }
+
+    @Test
+    @DisplayName("기존 포인트보다 많은 양의 포인트를 사용할 수 없다.")
+    void notUsePointWithNotEnoughPoint() {
+        //given
+        long userId = 1L;
+        long amount = 1000L;
+
+        UserPoint mockUserPoint = new UserPoint(userId, 500, System.currentTimeMillis());
+
+        when(pointOutPort.getPoint(userId)).thenReturn(mockUserPoint);
+
+        //when & then
+        assertThatThrownBy(() -> pointService.use(userId, amount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("포인트가 부족합니다.");
+    }
+
+    @Test
+    @DisplayName("기존 유저의 포인트를 사용할 수 있다.")
+    void usePointExistsUser() {
+
+        //given
+        long userId = 1L;
+        long amount = 1000L;
+
+        UserPoint mockUserPoint = new UserPoint(userId, 2000, System.currentTimeMillis());
+
+        when(pointOutPort.getPoint(userId)).thenReturn(mockUserPoint);
+
+        // pointOutPort.use(id, amount)가 호출될 때 포인트 값을 갱신하도록 설정
+        // void의 경우 doAnswer를 통해 처리 동작 셋팅
+        doAnswer(invocation -> {
+            UserPoint updatedUserPoint = invocation.getArgument(0);
+            long newPoint = updatedUserPoint.getPoint() - amount;
+            updatedUserPoint = new UserPoint(userId, newPoint, System.currentTimeMillis());
+
+            // 포인트가 갱신된 UserPoint 객체를 pointOutPort에 반영
+            when(pointOutPort.getPoint(userId)).thenReturn(updatedUserPoint);
+
+            return null;
+        }).when(pointOutPort).use(any(UserPoint.class), eq(amount));
+
+        //when
+        pointService.use(userId, amount);
+        long point = pointService.getPoint(userId);
+
+        //then
+        assertEquals(1000, point);
+        verify(pointOutPort, times(1)).use(mockUserPoint, amount);
     }
 }

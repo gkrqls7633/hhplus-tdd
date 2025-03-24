@@ -45,4 +45,25 @@ public class PointService implements PointInPort {
         }
     }
 
+    @Override
+    public void use(long id, long amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("사용할 포인트는 0보다 커야합니다.");
+        }
+
+        UserPoint userPoint = pointOutPort.getPoint(id);
+
+        //신규 유저의 포인트 사용은 불가 (유효한 유저 id인지 체크)
+        if (userPoint == null) {
+            throw new IllegalArgumentException("유효하지 않은 유저 ID입니다.");
+        }
+
+        //기존 유저의 포인트는 사용할 amount보다 크거나 같아야한다.
+        if (userPoint.getPoint() >= amount) {
+            pointOutPort.use(userPoint, amount);
+        } else {
+            throw new IllegalArgumentException("포인트가 부족합니다.");
+        }
+    }
+
 }

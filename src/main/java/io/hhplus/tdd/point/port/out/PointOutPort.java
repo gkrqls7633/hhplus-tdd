@@ -7,4 +7,6 @@ public interface PointOutPort {
     UserPoint getPoint(long id);
 
     void charge(UserPoint userPoint, long amount);
+
+    void use(UserPoint userPoint, long amount);
 }

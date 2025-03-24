@@ -28,4 +28,8 @@ public record UserPoint(
         return new UserPoint(this.id, this.point + amount, System.currentTimeMillis());
     }
 
+    public UserPoint usePoint(long id, long amount) {
+        return new UserPoint(this.id, this.point - amount, System.currentTimeMillis());
+    }
+
 }
