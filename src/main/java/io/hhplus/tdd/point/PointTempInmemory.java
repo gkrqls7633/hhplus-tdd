@@ -48,7 +48,6 @@ public class PointTempInmemory implements PointOutPort {
         dbMap.put(userPoint.id(), newUserPoint);
 
         log.info("Updated dbMap: {}", dbMap);
-
     }
 
     private void throttle(long millis) {

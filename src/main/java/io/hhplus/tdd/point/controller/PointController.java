@@ -1,6 +1,7 @@
 package io.hhplus.tdd.point.controller;
 
 import io.hhplus.tdd.point.PointHistory;
+import io.hhplus.tdd.point.port.in.PointHistoryInPort;
 import io.hhplus.tdd.point.port.in.PointInPort;
 import io.hhplus.tdd.point.service.PointService;
 import io.hhplus.tdd.point.UserPoint;
@@ -20,6 +21,8 @@ public class PointController {
 
     private final PointInPort pointInPort;
 
+    private final PointHistoryInPort pointHistoryInPort;
+
     private static final Logger log = LoggerFactory.getLogger(PointController.class);
 
     /**
@@ -37,10 +40,8 @@ public class PointController {
      * TODO - 특정 유저의 포인트 충전/이용 내역을 조회하는 기능을 작성해주세요.
      */
     @GetMapping("{id}/histories")
-    public List<PointHistory> history(
-            @PathVariable long id
-    ) {
-        return List.of();
+    public List<PointHistory> history(@PathVariable long id) {
+        return pointHistoryInPort.selectAllByUserId(id);
     }
 
     /**

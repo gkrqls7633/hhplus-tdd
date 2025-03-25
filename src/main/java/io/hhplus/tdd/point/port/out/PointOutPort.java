@@ -1,6 +1,9 @@
 package io.hhplus.tdd.point.port.out;
 
+import io.hhplus.tdd.point.PointHistory;
 import io.hhplus.tdd.point.UserPoint;
+
+import java.util.List;
 
 public interface PointOutPort {
 
@@ -9,4 +12,5 @@ public interface PointOutPort {
     void charge(UserPoint userPoint, long amount);
 
     void use(UserPoint userPoint, long amount);
+
 }

@@ -1,16 +1,22 @@
 package io.hhplus.tdd.point.service;
 
+import io.hhplus.tdd.point.PointHistory;
+import io.hhplus.tdd.point.TransactionType;
 import io.hhplus.tdd.point.UserPoint;
 import io.hhplus.tdd.point.port.in.PointInPort;
+import io.hhplus.tdd.point.port.out.PointHistoryOutPort;
 import io.hhplus.tdd.point.port.out.PointOutPort;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+
 
 @Service
 @AllArgsConstructor
 public class PointService implements PointInPort {
 
     private final PointOutPort pointOutPort;
+    private final PointHistoryOutPort pointHistoryOutPort;
+
 
     /* 특정 유저 포인트 조회 */
     @Override
@@ -43,6 +49,10 @@ public class PointService implements PointInPort {
         } else{
             pointOutPort.charge(userPoint, amount);
         }
+
+        // 포인트 충전 완료 후 history insert
+        PointHistory pointHistory = pointHistoryOutPort.insert(id, amount, TransactionType.CHARGE, System.currentTimeMillis());
+
     }
 
     @Override
@@ -64,6 +74,9 @@ public class PointService implements PointInPort {
         } else {
             throw new IllegalArgumentException("포인트가 부족합니다.");
         }
+
+        //포인트 사용 후 history insert
+        PointHistory pointHistory = pointHistoryOutPort.insert(id, amount, TransactionType.USE, System.currentTimeMillis());
     }
 
 }
