@@ -2,6 +2,7 @@ package io.hhplus.tdd.point.service;
 
 import io.hhplus.tdd.point.PointTempInmemory;
 import io.hhplus.tdd.point.UserPoint;
+import io.hhplus.tdd.point.port.out.PointHistoryOutPort;
 import io.hhplus.tdd.point.port.out.PointOutPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ class PointServiceTest {
 
     @Mock
     private PointOutPort pointOutPort;  // PointOutPort를 Mock 객체로 생성
+
+    @Mock
+    private PointHistoryOutPort pointHistoryOutPort;  // PointOutPort를 Mock 객체로 생성
 
 
     @Test
