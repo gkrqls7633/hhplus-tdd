@@ -50,15 +50,15 @@ public class PointController {
      * 충전 포인트(amount)가 0보다 커야함
      */
     @PatchMapping("{id}/charge")
-    public void charge(@PathVariable long id, @RequestBody long amount){
-        pointInPort.charge(id, amount);
+    public UserPoint charge(@PathVariable long id, @RequestBody long amount){
+        return pointInPort.charge(id, amount);
     }
 
     /**
      * TODO - 특정 유저의 포인트를 사용하는 기능을 작성해주세요.
      */
     @PatchMapping("{id}/use")
-    public void use(@PathVariable long id, @RequestBody long amount) {
-        pointInPort.use(id, amount);
+    public UserPoint use(@PathVariable long id, @RequestBody long amount) {
+        return pointInPort.use(id, amount);
     }
 }

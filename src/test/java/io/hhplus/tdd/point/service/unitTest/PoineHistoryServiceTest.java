@@ -1,10 +1,11 @@
-package io.hhplus.tdd.point.service;
+package io.hhplus.tdd.point.service.unitTest;
 
 import io.hhplus.tdd.point.PointHistory;
 import io.hhplus.tdd.point.TransactionType;
 import io.hhplus.tdd.point.UserPoint;
 import io.hhplus.tdd.point.port.out.PointHistoryOutPort;
 import io.hhplus.tdd.point.port.out.PointOutPort;
+import io.hhplus.tdd.point.service.PointHistoryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

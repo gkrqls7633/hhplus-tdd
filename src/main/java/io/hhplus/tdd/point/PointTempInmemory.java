@@ -26,6 +26,10 @@ public class PointTempInmemory implements PointOutPort {
         dbMap.put(3L, UserPoint.of(3L, 0));
     }
 
+    public Map<Long, UserPoint> getDbMap() {
+        return dbMap;
+    }
+
     @Override
     public UserPoint getPoint(long id) {
         throttle(300);
@@ -33,21 +37,25 @@ public class PointTempInmemory implements PointOutPort {
     }
 
     @Override
-    public void charge(UserPoint userPoint, long amount) {
+    public UserPoint charge(UserPoint userPoint, long amount) {
         throttle(300);
-        UserPoint newUserPoint = userPoint.chargePoint(userPoint.id(), amount);
-        dbMap.put(userPoint.id(), newUserPoint);
+        UserPoint cgUserPoint = userPoint.chargePoint(userPoint.id(), amount);
+        dbMap.put(userPoint.id(), cgUserPoint);
 
         log.info("Updated dbMap: {}", dbMap);
+
+        return cgUserPoint;
     }
 
     @Override
-    public void use(UserPoint userPoint, long amount) {
+    public UserPoint use(UserPoint userPoint, long amount) {
         throttle(300);
-        UserPoint newUserPoint = userPoint.usePoint(userPoint.id(), amount);
-        dbMap.put(userPoint.id(), newUserPoint);
+        UserPoint useUserPoint = userPoint.usePoint(userPoint.id(), amount);
+        dbMap.put(userPoint.id(), useUserPoint);
 
         log.info("Updated dbMap: {}", dbMap);
+
+        return useUserPoint;
     }
 
     private void throttle(long millis) {
