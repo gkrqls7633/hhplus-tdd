@@ -59,10 +59,14 @@ public class PointTempInmemory implements PointOutPort {
     }
 
     private void throttle(long millis) {
+        long startTime = System.currentTimeMillis();  // 지연 시작 시간 기록
+
         try {
             TimeUnit.MILLISECONDS.sleep((long) (Math.random() * millis));
         } catch (InterruptedException ignored) {
 
         }
+        long elapsedTime = System.currentTimeMillis() - startTime;  // 실제 지연 시간 계산
+        log.info("Throttle delay time: {} ms", elapsedTime);  // 지연 시간 로그 출력
     }
 }
