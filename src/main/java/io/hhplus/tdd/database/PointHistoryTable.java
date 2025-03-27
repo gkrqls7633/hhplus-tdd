@@ -18,6 +18,10 @@ public class PointHistoryTable implements PointHistoryOutPort {
     private final List<PointHistory> table = new ArrayList<>();
     private long cursor = 1;
 
+    public List<PointHistory> getTable() {
+        return table;
+    }
+
     @Override
     public PointHistory insert(long userId, long amount, TransactionType type, long updateMillis) {
         throttle(300L);

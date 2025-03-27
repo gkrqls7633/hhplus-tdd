@@ -33,7 +33,7 @@ public class PointService implements PointInPort {
 
     /* 특정 유저 포인트 충전 */
     @Override
-    public UserPoint charge(long id, long amount) {
+    public synchronized UserPoint charge(long id, long amount) {
 
         if (amount <= 0) {
             throw new IllegalArgumentException("충전할 포인트는 0보다 커야합니다.");
@@ -59,7 +59,7 @@ public class PointService implements PointInPort {
     }
 
     @Override
-    public UserPoint use(long id, long amount) {
+    public synchronized UserPoint use(long id, long amount) {
         if (amount < 0) {
             throw new IllegalArgumentException("사용할 포인트는 0보다 커야합니다.");
         }

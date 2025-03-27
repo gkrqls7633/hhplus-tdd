@@ -1,10 +1,13 @@
 package io.hhplus.tdd.point.service.integrationTest;
 
+import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.point.PointHistory;
+import io.hhplus.tdd.point.PointTempInmemory;
 import io.hhplus.tdd.point.UserPoint;
 import io.hhplus.tdd.point.port.out.PointHistoryOutPort;
 import io.hhplus.tdd.point.port.out.PointOutPort;
 import io.hhplus.tdd.point.service.PointService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -13,15 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 public class PointServiceIntegrationtest {
@@ -38,6 +34,24 @@ public class PointServiceIntegrationtest {
 
     @Autowired
     private PointHistoryOutPort pointHistoryOutPort;
+
+    @BeforeEach
+    void setUp() {
+
+        //pointTempInmemory 초기화
+        PointTempInmemory pointTempInmemory = (PointTempInmemory) pointOutPort;
+        pointTempInmemory.getDbMap().clear();
+
+        pointTempInmemory.getDbMap().put(1L, UserPoint.of(1L, 1000));
+        pointTempInmemory.getDbMap().put(2L, UserPoint.of(2L, 500));
+        pointTempInmemory.getDbMap().put(3L, UserPoint.of(3L, 0));
+
+        //PointHistoryTable 초기화
+        PointHistoryTable pointHistoryTable = (PointHistoryTable) pointHistoryOutPort;
+        pointHistoryTable.getTable().clear(); // table 초기화
+
+    }
+
 
     @Test
     @DisplayName("포인트 충전, 사용, 조회, 이력 조회 통합테스트")
@@ -65,9 +79,9 @@ public class PointServiceIntegrationtest {
         assertEquals(1, historyAfterCharge.size());
 
         //사용 기능 검증
-        UserPoint useUserPoint =  pointService.use(USER_ID, 1000L);
+        UserPoint useUserPoint =  pointService.use(USER_ID, 2000L);
         log.info("useUserPoint: {}", useUserPoint);
-        assertEquals(1000L, useUserPoint.getPoint());
+        assertEquals(0L, useUserPoint.getPoint());
 
         //사용 완료 후 history insert 내역 확인
         List<PointHistory> historyAfterUse = pointHistoryOutPort.selectAllByUserId(USER_ID);
@@ -76,45 +90,116 @@ public class PointServiceIntegrationtest {
     }
 
     @Test
-    @DisplayName("포인트 사용을 동시에 여러 자원에서 접근한다.")
-    void usePointConcurrently() throws InterruptedException {
-
+    @DisplayName("스레드의 동시성 이슈 처리를 통해 포인트 사용을 검증한다.")
+    void usePointWithSyncronized() throws InterruptedException {
         //given
         long userId = 1L;
         final long amount = 200;  // 각 스레드가 200원씩 사용
         UserPoint userPoint = pointOutPort.getPoint(userId);
-
         log.info("userPoint: {}", userPoint);
 
-        ExecutorService executor = Executors.newFixedThreadPool(5);
+        Thread thread1 = new Thread(() -> {
+            System.out.println("Thread 1 Starting");
+            UserPoint useUserPoint1 =  pointService.use(USER_ID, amount);
+            System.out.println("Thread 1 Finished");
+        });
 
-        // 5개의 스레드가 동시에 포인트를 사용하려고 시도
-        AtomicInteger count = new AtomicInteger();
-        for (int i = 0; i < 5; i++) {
-            executor.submit(() -> {
-                try {
-                    pointOutPort.use(userPoint, amount);
-                    count.getAndIncrement();
+        Thread thread2 = new Thread(() -> {
+            System.out.println("Thread 2 Starting");
+            UserPoint useUserPoint2 =  pointService.use(USER_ID, amount);
+            System.out.println("Thread 2 Finished");
+        });
 
-                    log.info("count : {} ", count.get());
+        Thread thread3 = new Thread(() -> {
+            System.out.println("Thread 3 Starting");
+            UserPoint useUserPoint3 =  pointService.use(USER_ID, amount);
+            System.out.println("Thread 3 Finished");
+        });
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-        }
+        thread1.start();
+        thread2.start();
+        thread3.start();
 
-        log.info("count : {} ", count.get());
+        thread1.join();
+        thread2.join();
+        thread3.join();
 
-        // 종료 대기
-        executor.shutdown();
-//        executor.awaitTermination(1, TimeUnit.MINUTES);  // 1분 이내로 종료되기를 기다림
-
-        // then
-        // 5번 사용하려고 했으므로, 최종 포인트는 0이 되어야 한다 (1000 - 200 * 5)
-        UserPoint finalUserPoint = pointOutPort.getPoint(userId);
-        assertNotNull(finalUserPoint);
-        assertEquals(0L, finalUserPoint.getPoint());  // 최종 포인트는 0이어야 함
+        assertEquals(400L, pointOutPort.getPoint(userId).getPoint());
     }
 
+    @Test
+    @DisplayName("스레드의 동시성 이슈 처리를 통해 포인트 충전을 검증한다.")
+    void chargePointWithSyncronized() throws InterruptedException {
+        //given
+        long userId = 1L;
+        final long amount = 200;  // 각 스레드가 200원씩 충전
+        UserPoint userPoint = pointOutPort.getPoint(userId);
+        log.info("userPoint: {}", userPoint);
+
+        Thread thread1 = new Thread(() -> {
+            System.out.println("Thread 1 Starting");
+            UserPoint useUserPoint1 =  pointService.charge(USER_ID, amount);
+            System.out.println("Thread 1 Finished");
+        });
+
+        Thread thread2 = new Thread(() -> {
+            System.out.println("Thread 2 Starting");
+            UserPoint useUserPoint2 =  pointService.charge(USER_ID, amount);
+            System.out.println("Thread 2 Finished");
+        });
+
+        Thread thread3 = new Thread(() -> {
+            System.out.println("Thread 3 Starting");
+            UserPoint useUserPoint3 =  pointService.charge(USER_ID, amount);
+            System.out.println("Thread 3 Finished");
+        });
+
+        thread1.start();
+        thread2.start();
+        thread3.start();
+
+        thread1.join();
+        thread2.join();
+        thread3.join();
+
+        assertEquals(1600L, pointOutPort.getPoint(userId).getPoint());
+    }
+
+    @Test
+    @DisplayName("스레드의 동시성 이슈 처리를 통해 포인트 사용과 충전을 검증한다.")
+    void useAndChargePointWithSyncronized() throws InterruptedException {
+        //given
+        long userId = 1L;
+        final long amount = 200;  // 각 스레드가 200원씩 사용/충전
+        UserPoint userPoint = pointOutPort.getPoint(userId);
+        log.info("userPoint: {}", userPoint);
+
+        Thread thread1 = new Thread(() -> {
+            System.out.println("Thread 1 Starting");
+            UserPoint useUserPoint1 =  pointService.use(USER_ID, amount);
+            System.out.println("Thread 1 Finished");
+        });
+
+        Thread thread2 = new Thread(() -> {
+            System.out.println("Thread 2 Starting");
+            UserPoint useUserPoint2 =  pointService.charge(USER_ID, amount);
+            System.out.println("Thread 2 Finished");
+        });
+
+        Thread thread3 = new Thread(() -> {
+            System.out.println("Thread 3 Starting");
+            UserPoint useUserPoint3 =  pointService.charge(USER_ID, amount);
+            System.out.println("Thread 3 Finished");
+        });
+
+        thread1.start();
+        thread2.start();
+        thread3.start();
+
+        thread1.join();
+        thread2.join();
+        thread3.join();
+
+        assertEquals(1200L, pointOutPort.getPoint(userId).getPoint());
+    }
 }

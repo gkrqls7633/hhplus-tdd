@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -38,22 +40,36 @@ public class PointTempInmemory implements PointOutPort {
 
     @Override
     public UserPoint charge(UserPoint userPoint, long amount) {
+
+        log.info("----------Lock---------");
+        log.info("Lock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
+
         throttle(300);
         UserPoint cgUserPoint = userPoint.chargePoint(userPoint.id(), amount);
         dbMap.put(userPoint.id(), cgUserPoint);
 
         log.info("Updated dbMap: {}", dbMap);
 
+        log.info("----------UnLock---------");
+        log.info("UnLock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
+
         return cgUserPoint;
     }
 
     @Override
     public UserPoint use(UserPoint userPoint, long amount) {
+
+        log.info("----------Lock---------");
+        log.info("Lock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
+
         throttle(300);
         UserPoint useUserPoint = userPoint.usePoint(userPoint.id(), amount);
         dbMap.put(userPoint.id(), useUserPoint);
 
         log.info("Updated dbMap: {}", dbMap);
+
+        log.info("----------UnLock---------");
+        log.info("UnLock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
 
         return useUserPoint;
     }
@@ -66,6 +82,7 @@ public class PointTempInmemory implements PointOutPort {
         } catch (InterruptedException ignored) {
 
         }
+
         long elapsedTime = System.currentTimeMillis() - startTime;  // 실제 지연 시간 계산
         log.info("Throttle delay time: {} ms", elapsedTime);  // 지연 시간 로그 출력
     }
