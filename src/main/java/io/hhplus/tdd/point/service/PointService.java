@@ -33,30 +33,33 @@ public class PointService implements PointInPort {
 
     /* 특정 유저 포인트 충전 */
     @Override
-    public void charge(long id, long amount) {
+    public synchronized UserPoint charge(long id, long amount) {
 
         if (amount <= 0) {
             throw new IllegalArgumentException("충전할 포인트는 0보다 커야합니다.");
         }
         UserPoint userPoint = pointOutPort.getPoint(id);
 
+        UserPoint cgUserPoint;
+
         //신규 유저의 포인트 충전
         if (userPoint == null) {
             UserPoint newUserPoint = UserPoint.of(id, 0);
-            pointOutPort.charge(newUserPoint, amount);
+            cgUserPoint = pointOutPort.charge(newUserPoint, amount);
 
         //기존에 존재하는 유저의 포인트 충전
         } else{
-            pointOutPort.charge(userPoint, amount);
+            cgUserPoint = pointOutPort.charge(userPoint, amount);
         }
 
         // 포인트 충전 완료 후 history insert
         PointHistory pointHistory = pointHistoryOutPort.insert(id, amount, TransactionType.CHARGE, System.currentTimeMillis());
 
+        return cgUserPoint;
     }
 
     @Override
-    public void use(long id, long amount) {
+    public synchronized UserPoint use(long id, long amount) {
         if (amount < 0) {
             throw new IllegalArgumentException("사용할 포인트는 0보다 커야합니다.");
         }
@@ -68,15 +71,19 @@ public class PointService implements PointInPort {
             throw new IllegalArgumentException("유효하지 않은 유저 ID입니다.");
         }
 
+        UserPoint useUserPoint;
+
         //기존 유저의 포인트는 사용할 amount보다 크거나 같아야한다.
         if (userPoint.getPoint() >= amount) {
-            pointOutPort.use(userPoint, amount);
+            useUserPoint = pointOutPort.use(userPoint, amount);
         } else {
             throw new IllegalArgumentException("포인트가 부족합니다.");
         }
 
         //포인트 사용 후 history insert
         PointHistory pointHistory = pointHistoryOutPort.insert(id, amount, TransactionType.USE, System.currentTimeMillis());
+
+        return useUserPoint;
     }
 
 }

@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +28,10 @@ public class PointTempInmemory implements PointOutPort {
         dbMap.put(3L, UserPoint.of(3L, 0));
     }
 
+    public Map<Long, UserPoint> getDbMap() {
+        return dbMap;
+    }
+
     @Override
     public UserPoint getPoint(long id) {
         throttle(300);
@@ -33,28 +39,51 @@ public class PointTempInmemory implements PointOutPort {
     }
 
     @Override
-    public void charge(UserPoint userPoint, long amount) {
+    public UserPoint charge(UserPoint userPoint, long amount) {
+
+        log.info("----------Lock---------");
+        log.info("Lock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
+
         throttle(300);
-        UserPoint newUserPoint = userPoint.chargePoint(userPoint.id(), amount);
-        dbMap.put(userPoint.id(), newUserPoint);
+        UserPoint cgUserPoint = userPoint.chargePoint(userPoint.id(), amount);
+        dbMap.put(userPoint.id(), cgUserPoint);
 
         log.info("Updated dbMap: {}", dbMap);
+
+        log.info("----------UnLock---------");
+        log.info("UnLock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
+
+        return cgUserPoint;
     }
 
     @Override
-    public void use(UserPoint userPoint, long amount) {
+    public UserPoint use(UserPoint userPoint, long amount) {
+
+        log.info("----------Lock---------");
+        log.info("Lock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
+
         throttle(300);
-        UserPoint newUserPoint = userPoint.usePoint(userPoint.id(), amount);
-        dbMap.put(userPoint.id(), newUserPoint);
+        UserPoint useUserPoint = userPoint.usePoint(userPoint.id(), amount);
+        dbMap.put(userPoint.id(), useUserPoint);
 
         log.info("Updated dbMap: {}", dbMap);
+
+        log.info("----------UnLock---------");
+        log.info("UnLock time: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date(System.currentTimeMillis())));
+
+        return useUserPoint;
     }
 
     private void throttle(long millis) {
+        long startTime = System.currentTimeMillis();  // 지연 시작 시간 기록
+
         try {
             TimeUnit.MILLISECONDS.sleep((long) (Math.random() * millis));
         } catch (InterruptedException ignored) {
 
         }
+
+        long elapsedTime = System.currentTimeMillis() - startTime;  // 실제 지연 시간 계산
+        log.info("Throttle delay time: {} ms", elapsedTime);  // 지연 시간 로그 출력
     }
 }

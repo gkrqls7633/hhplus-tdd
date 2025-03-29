@@ -8,8 +8,8 @@ import java.util.List;
 public interface PointInPort {
     long getPoint(long id);
 
-    void charge(long id, long amount);
+    UserPoint charge(long id, long amount);
 
-    void use(long id, long amount);
+    UserPoint use(long id, long amount);
 
 }
